@@ -20,6 +20,9 @@ tok = (src, errors, ctx) ->
   state.line_offset = 0
   state.block_comment = 0
   
+  # TODO: multiline strings
+  # TODO: ( ) [ ] use same line, but { } do not
+  
   # identifier (includes keywords)
   lexer.addRule(/[a-z_][a-z0-9_]*/i, (lexeme) ->
     if state.block_comment == 0
