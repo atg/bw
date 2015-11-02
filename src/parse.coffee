@@ -1,24 +1,36 @@
 class TokBuffer
   constructor: (line) ->
     @toks = line.toks.slice()
-    
-    # TODO: just use an index here instead of reversing
-    @toks.reverse() # reverse in place
+    @idx = 0
   
-  peek: () ->
-    if @toks.length > 0
-      return @toks[0]
-    else
-      return null
+  prev: () -> peekN(-1) # previous
+  peek: () -> peekN(0) # current
+  next: () -> peekN(1) # next
   
   pop: () ->
-    if @toks.length > 0
-      return @toks.pop()
-    else
-      return null
+    i = @idx
+    if i >= 0 and i < @toks.length
+      @idx += 1
+      return @toks[i]
+    return null
+  
+  peekN: (delta) ->
+    i = @idx + delta
+    if i >= 0 and i < @toks.length
+      return @toks[i]
+    return null
   
   isEmpty: () ->
-    return @toks.length == 0
+    return not (@idx >= 0 and @idx < @toks.length)
+
+isSymbol: (t) ->
+  t.kind == "symbol"
+isSymbolX: (t, x) ->
+  t.kind == "symbol" and t.val == x
+isIdent: (t) ->
+  t.kind == "ident"
+isIdentX: (t, x) ->
+  t.kind == "ident" and t.val == x
 
 
 # TODO: eval insertions.
@@ -60,7 +72,7 @@ parse = (lines, errors, ctx) ->
       errors.error(toks.prev(), "use ___ what?")
       return false
     
-    if moduleName.kind != "ident"
+    if not isIdent(moduleName)
       errors.error(moduleName, "Unexpected %s", [moduleName])
       return false
     
@@ -69,7 +81,7 @@ parse = (lines, errors, ctx) ->
     if not colon?
       return useDecl
     
-    if colon.kind != "symbol" or colon.val != ":"
+    if not isSymbolX(colon, ":")
       errors.warning(colon, "Ignoring unexpected %s", [colon])
       return useDecl
     
@@ -97,18 +109,14 @@ parse = (lines, errors, ctx) ->
   
   _parseDecls = (line, toks) ->
     head = toks.pop()
-    if head.kind == "ident"
+    if isIdent(head)
       if head.val == "fn"
-        # function decl
         return _parseDeclFn(line, toks, false)
       else if head.val == "let"
-        # let decl
         return _parseDeclLet(line, toks, false)
       else if head.val == "meta"
-        # meta decl
         return _parseDeclMeta(line, toks)
       else if head.val == "use"
-        # use decl
         return _parseDeclUse(line, toks, false)
       else
         # [extpoint] decl.0
@@ -124,7 +132,7 @@ parse = (lines, errors, ctx) ->
   
   _parseStmts = (line, toks) ->
     head = toks.pop()
-    if head.kind == "ident"
+    if isIdent(head)
       switch head.val
         when "if"
           _parseStmtIf(line, toks)
