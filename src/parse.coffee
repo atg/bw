@@ -57,7 +57,6 @@ parse = (lines, errors, ctx) ->
   _parseDeclLet = (line, toks, isMeta) ->
     # name = expr
     # name { body }
-    
   
   _parseDeclUse = (line, toks, isMeta) ->
     # moduleName
@@ -87,8 +86,6 @@ parse = (lines, errors, ctx) ->
     
     # comma separated list of idents
     # TODO
-    
-    
   
   _parseDeclMeta = (line, toks) ->
     head2 = toks.pop()
@@ -127,38 +124,29 @@ parse = (lines, errors, ctx) ->
       errors.error(head, "Unexpected %s", [head])
       return false
   
-  _parseFn = (line, toks) ->
-    undefined
-  
   _parseStmts = (line, toks) ->
     head = toks.pop()
+    dispatch = {
+      "if": _parseStmtIf,
+      "else": _parseStmtElse,
+      "for": _parseStmtFor,
+      "let": _parseStmtLet,
+      "var": _parseStmtVar,
+      "match": _parseStmtMatch,
+      "rt": _parseStmtReturn,
+      "return": _parseStmtReturn,
+      "break": _parseStmtBreak,
+      "continue": _parseStmtContinue,
+      "yield": _parseStmtYield,
+      "async": _parseStmtAsync,
+    }
     if isIdent(head)
-      switch head.val
-        when "if"
-          _parseStmtIf(line, toks)
-        when "else"
-          _parseStmtElse(line, toks)
-        when "for"
-          _parseStmtFor(line, toks)
-        when "let"
-          _parseStmtVar(line, toks, 'let')
-        when "var"
-          _parseStmtVar(line, toks, 'var')
-        when "match"
-          _parseStmtMatch(line, toks)
-        when "rt", "return"
-          _parseStmtReturn(line, toks)
-        when "break"
-          _parseStmtBreak(line, toks)
-        when "continue"
-          _parseStmtContinue(line, toks)
-        when "yield"
-          _parseStmtYield(line, toks)
-        when "async"
-          _parseStmtAsync(line, toks)
-        else
-          # [extpoint] stmt.0
-          assert False
+      k = head.val
+      if k of dispatch
+        return dispatch[k](line, toks)
+      else
+        # [extpoint] stmt.0
+        assert False
   
   for line in lines
     toks = new TokBuffer(line.toks)
